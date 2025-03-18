@@ -165,7 +165,7 @@ from ansible.module_utils.urls import fetch_url
 ROCKETCHAT_INCOMING_WEBHOOK = '%s://%s/hooks/%s'
 
 
-def build_payload_for_rocketchat(module, text, channel, username, icon_url, icon_emoji, link_names, color, attachments):
+def build_payload_for_rocketchat(module, text, channel, username, icon_url, icon_emoji, link_names, color, attachments, option_is_pre740):
     payload = {}
     if color == "normal" and text is not None:
         payload = dict(text=text)
@@ -195,7 +195,9 @@ def build_payload_for_rocketchat(module, text, channel, username, icon_url, icon
                 attachment['fallback'] = attachment['text']
             payload['attachments'].append(attachment)
 
-    payload = "payload=" + module.jsonify(payload)
+    payload = module.jsonify(payload)
+    if option_is_pre740:
+        payload = "payload=" + module.jsonify(payload)
     return payload
 
 
@@ -225,7 +227,8 @@ def main():
             link_names=dict(type='int', default=1, choices=[0, 1]),
             validate_certs=dict(default=True, type='bool'),
             color=dict(type='str', default='normal', choices=['normal', 'good', 'warning', 'danger']),
-            attachments=dict(type='list', elements='dict', required=False)
+            attachments=dict(type='list', elements='dict', required=False),
+            option_is_pre740=dict(default=True, type='bool')
         )
     )
 
@@ -240,8 +243,9 @@ def main():
     link_names = module.params['link_names']
     color = module.params['color']
     attachments = module.params['attachments']
+    option_is_pre740 = module.params['option_is_pre740']
 
-    payload = build_payload_for_rocketchat(module, text, channel, username, icon_url, icon_emoji, link_names, color, attachments)
+    payload = build_payload_for_rocketchat(module, text, channel, username, icon_url, icon_emoji, link_names, color, attachments, option_is_pre740)
     do_notify_rocketchat(module, domain, token, protocol, payload)
 
     module.exit_json(msg="OK")
